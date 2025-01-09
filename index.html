@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Coin Flip Simulator</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="A simple coin flipping gambling simulator" />
+    <link rel="icon" href="favicon.png">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            min-height: 100vh;
+        }
+        .panel {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .panel-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .controls-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.active {
+            background-color: #f44336;
+        }
+        button.active:hover {
+            background-color: #da190b;
+        }
+        input[type="number"], input[type="text"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .strategy-controls {
+            display: flex;
+            gap: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .stat-item {
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .game-over-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal-title {
+            font-size: 24px;
+            color: #f44336;
+            margin-bottom: 20px;
+        }
+        .modal-stats {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .modal-stats div {
+            margin: 10px 0;
+        }
+        #resetGameButton {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background-color: #be4242;
+        }
+        .leaderboard-panel {
+            margin-top: 20px;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+        }
+        .leaderboard-table.hidden {
+            max-height: 0;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .leaderboard-table th {
+            background-color: #f5f5f5;
+        }
+        .high-score {
+            color: #4CAF50;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .leaderboard-title {
+            cursor: pointer;
+            user-select: none;
+        }
+        .leaderboard-title:hover {
+            opacity: 0.8;
+        }
+        .leaderboard-title::after {
+            content: '▼';
+            margin-left: 10px;
+            font-size: 0.8em;
+            transition: transform 0.3s;
+        }
+        .leaderboard-title.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        #leaderboardContent {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        #leaderboardContent.collapsed {
+            max-height: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="modal-content">
+            <div class="modal-title">Game Over!</div>
+            <div class="modal-stats">
+                <div>Final Balance: <span id="finalBalance"></span></div>
+                <div>Max Balance: <span id="finalMaxBalance"></span></div>
+                <div>Max Win: <span id="finalMaxWin"></span></div>
+                <div>Max Loss: <span id="finalMaxLoss"></span></div>
+                <div>Max Consecutive Wins: <span id="finalMaxConsWins"></span></div>
+                <div>Max Consecutive Losses: <span id="finalMaxConsLosses"></span></div>
+                <div id="newHighScore" class="high-score" style="display:none">New High Score!</div>
+                <div style="margin-top: 20px;">
+                    <label for="playerName">Your Name:</label>
+                    <input type="text" id="playerName" value="Doob" />
+                </div>
+            </div>
+            <button onclick="saveScore()">Save Score</button>
+            <button onclick="elements.resetGameButton.click(); document.getElementById('gameOverModal').style.display='none';">
+                Reset Game Without Saving
+            </button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Betting Controls</div>
+        <div class="controls-group">
+            <label for="baseBet">Base Bet:</label>
+            <input type="number" id="baseBet" value="0.01" min="0.01" max="99999999999999999999999" step="0.01" oninput="elements.betAmountInput.value = this.value" />
+        </div>
+        <div class="controls-group">
+            <label for="betAmount">Bet Amount:</label>
+            <input type="number" id="betAmount" value="0.01" min="0.01" max="99999999999999999999999" step="0.01" />
+            <button id="spinButton">Spin The Coin</button>
+        </div>
+        <div class="controls-group">
+            <button id="doubleBetButton">Double The Bet</button>
+            <button id="resetBetButton">Reset Bet</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Automation Settings</div>
+        <div class="controls-group">
+            <button id="autoSpinButton">Auto Spin</button>
+            <label for="spinSpeed">Spins per second:</label>
+            <input type="number" id="spinSpeed" value="20" min="1" max="200" step="1" />
+        </div>
+        <div class="strategy-controls">
+            <div>
+                <input type="checkbox" id="autoMartingale" />
+                <label for="autoMartingale">Automatic Martingale</label>
+            </div>
+            <div>
+                <input type="checkbox" id="autoReverseMartingale" />
+                <label for="autoReverseMartingale">Automatic Reverse Martingale</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Game Status</div>
+        <p id="balanceDisplay"></p>
+        <div id="balanceHistoryChart"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Statistics</div>
+        <div class="stats-grid">
+            <div class="stat-item">Max Loss Current: <span id="maxLossCurrent">0</span></div>
+            <div class="stat-item">Max Win Current: <span id="maxWinCurrent">0</span></div>
+            <div class="stat-item">Max Consecutive Loss: <span id="maxConsecutiveLoss">0</span></div>
+            <div class="stat-item">Max Consecutive Win: <span id="maxConsecutiveWin">0</span></div>
+            <div class="stat-item">Max Balance: <span id="maxBalance">100</span></div>
+            <div class="stat-item">Min Balance: <span id="minBalance">100</span></div>
+        </div>
+    </div>
+
+    <div class="panel leaderboard-panel">
+        <div class="panel-title leaderboard-title" onclick="toggleLeaderboard()">Leaderboard</div>
+        <div id="leaderboardContent">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Final Balance</th>
+                        <th>Max Balance</th>
+                        <th>Max Win</th>
+                        <th>Max Consecutive Wins</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button id="resetGameButton">Reset Game</button>
+</body>
+<script>
+    // Game state
+    const INITIAL_BALANCE = 100;
+    let AUTO_SPIN_INTERVAL = 50;
+    const COIN_SIDES = ['heads', 'tails'];
+
+    // Game variables
+    let userBalance = INITIAL_BALANCE;
+    let balanceHistory = [INITIAL_BALANCE];
+    let autoSpinTimer = null;
+    let currentConsecutiveWins = 0;
+    let currentConsecutiveLosses = 0;
+    let maxConsecutiveWins = 0;
+    let maxConsecutiveLosses = 0;
+    let maxWinCurrent = 0;
+    let maxLossCurrent = 0;
+    let maxBalance = INITIAL_BALANCE;
+    let minBalance = INITIAL_BALANCE;
+
+    // Leaderboard
+    let leaderboard = JSON.parse(localStorage.getItem('coinFlipLeaderboard')) || [];
+
+    function toggleLeaderboard() {
+        const content = document.getElementById('leaderboardContent');
+        const title = document.querySelector('.leaderboard-title');
+        content.classList.toggle('collapsed');
+        title.classList.toggle('collapsed');
+    }
+
+    function updateLeaderboardDisplay() {
+        const tbody = document.getElementById('leaderboardBody');
+        tbody.innerHTML = '';
+        
+        leaderboard.sort((a, b) => b.maxBalance - a.maxBalance)
+            .slice(0, 10)
+            .forEach(entry => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = entry.name;
+                row.insertCell(1).textContent = entry.finalBalance.toFixed(2);
+                row.insertCell(2).textContent = entry.maxBalance.toFixed(2);
+                row.insertCell(3).textContent = entry.maxWin.toFixed(2);
+                row.insertCell(4).textContent = entry.maxConsecutiveWins;
+            });
+    }
+
+    function saveScore() {
+        const playerName = document.getElementById('playerName').value || 'Doob';
+        
+        const score = {
+            name: playerName,
+            finalBalance: userBalance,
+            maxBalance: maxBalance,
+            maxWin: maxWinCurrent,
+            maxLoss: maxLossCurrent,
+            maxConsecutiveWins: maxConsecutiveWins,
+            maxConsecutiveLosses: maxConsecutiveLosses,
+            timestamp: Date.now()
+        };
+
+        leaderboard.push(score);
+        // Keep only top 10 scores
+        leaderboard.sort((a, b) => b.maxBalance - a.maxBalance);
+        leaderboard = leaderboard.slice(0, 10);
+        localStorage.setItem('coinFlipLeaderboard', JSON.stringify(leaderboard));
+        
+        updateLeaderboardDisplay();
+        elements.resetGameButton.click();
+        document.getElementById('gameOverModal').style.display = 'none';
+    }
+
+    // Initialize leaderboard display
+    updateLeaderboardDisplay();
+
+    // DOM Elements
+    const elements = {
+        spinButton: document.getElementById('spinButton'),
+        doubleBetButton: document.getElementById('doubleBetButton'),
+        resetBetButton: document.getElementById('resetBetButton'),
+        resetGameButton: document.getElementById('resetGameButton'),
+        autoMartingale: document.getElementById('autoMartingale'),
+        autoReverseMartingale: document.getElementById('autoReverseMartingale'),
+        autoSpinButton: document.getElementById('autoSpinButton'),
+        balanceDisplay: document.getElementById('balanceDisplay'),
+        betAmountInput: document.getElementById('betAmount'),
+        baseBetInput: document.getElementById('baseBet'),
+        balanceHistoryChart: document.getElementById('balanceHistoryChart'),
+        maxLossCurrent: document.getElementById('maxLossCurrent'),
+        maxWinCurrent: document.getElementById('maxWinCurrent'),
+        maxConsecutiveLoss: document.getElementById('maxConsecutiveLoss'),
+        maxConsecutiveWin: document.getElementById('maxConsecutiveWin'),
+        maxBalance: document.getElementById('maxBalance'),
+        minBalance: document.getElementById('minBalance'),
+        spinSpeed: document.getElementById('spinSpeed')
+    };
+
+    // Initialize display
+    updateBalanceDisplay();
+
+    // Game functions
+    function updateBalanceDisplay() {
+        elements.balanceDisplay.textContent = `Balance: ${userBalance.toFixed(2)}`;
+    }
+
+    function showGameOver() {
+        const modal = document.getElementById('gameOverModal');
+        document.getElementById('finalBalance').textContent = userBalance.toFixed(2);
+        document.getElementById('finalMaxBalance').textContent = maxBalance.toFixed(2);
+        document.getElementById('finalMaxWin').textContent = maxWinCurrent.toFixed(2);
+        document.getElementById('finalMaxLoss').textContent = maxLossCurrent.toFixed(2);
+        document.getElementById('finalMaxConsWins').textContent = maxConsecutiveWins;
+        document.getElementById('finalMaxConsLosses').textContent = maxConsecutiveLosses;
+        
+        // Check if new high score
+        const sortedLeaderboard = [...leaderboard].sort((a, b) => b.maxBalance - a.maxBalance);
+        if (sortedLeaderboard.length === 0 || maxBalance > sortedLeaderboard[0].maxBalance) {
+            document.getElementById('newHighScore').style.display = 'block';
+        } else {
+            document.getElementById('newHighScore').style.display = 'none';
+        }
+        
+        modal.style.display = 'block';
+        
+        if (autoSpinTimer) {
+            elements.autoSpinButton.click(); // Stop auto spin
+        }
+    }
+
+    function updateStats(isWin, betAmount) {
+        // Update consecutive wins/losses
+        if (isWin) {
+            currentConsecutiveWins++;
+            currentConsecutiveLosses = 0;
+            maxConsecutiveWins = Math.max(maxConsecutiveWins, currentConsecutiveWins);
+            maxWinCurrent = Math.max(maxWinCurrent, betAmount * 2);
+        } else {
+            currentConsecutiveLosses++;
+            currentConsecutiveWins = 0;
+            maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentConsecutiveLosses);
+            maxLossCurrent = Math.max(maxLossCurrent, betAmount);
+        }
+
+        // Update balance extremes
+        maxBalance = Math.max(maxBalance, userBalance);
+        minBalance = Math.min(minBalance, userBalance);
+
+        // Update display
+        elements.maxLossCurrent.textContent = maxLossCurrent.toFixed(2);
+        elements.maxWinCurrent.textContent = maxWinCurrent.toFixed(2);
+        elements.maxConsecutiveLoss.textContent = maxConsecutiveLosses;
+        elements.maxConsecutiveWin.textContent = maxConsecutiveWins;
+        elements.maxBalance.textContent = maxBalance.toFixed(2);
+        elements.minBalance.textContent = minBalance.toFixed(2);
+    }
+
+    function flipCoin() {
+        return COIN_SIDES[Math.floor(Math.random() * COIN_SIDES.length)];
+    }
+
+    function updateChart() {
+        const trace = {
+            x: Array.from({ length: balanceHistory.length }, (_, i) => i),
+            y: balanceHistory,
+            type: 'scatter'
+        };
+
+        const layout = {
+            title: 'Balance History',
+            xaxis: { title: 'Number of Spins' },
+            yaxis: { title: 'Balance' }
+        };
+
+        Plotly.newPlot(elements.balanceHistoryChart, [trace], layout);
+    }
+
+    function handleBetResult(result, betAmount) {
+        const isWin = result === 'heads';
+        
+        if (isWin) {
+            userBalance += betAmount * 2;
+            elements.balanceDisplay.style.color = 'green';
+            handleWinningStrategy(betAmount);
+        } else {
+            elements.balanceDisplay.style.color = 'red';
+            handleLosingStrategy(betAmount);
+        }
+
+        updateStats(isWin, betAmount);
+        updateBalanceDisplay();
+        balanceHistory.push(userBalance);
+        updateChart();
+    }
+
+    function handleWinningStrategy(betAmount) {
+        if (elements.autoMartingale.checked) {
+            elements.betAmountInput.value = elements.baseBetInput.value;
+        }
+        if (elements.autoReverseMartingale.checked) {
+            if (currentConsecutiveWins >= 2) {
+                elements.betAmountInput.value = elements.baseBetInput.value;
+            } else {
+                elements.betAmountInput.value = (betAmount * parseFloat(elements.baseBetInput.value)).toFixed(2);
+            }
+        }
+    }
+
+    function handleLosingStrategy(betAmount) {
+        if (elements.autoMartingale.checked) {
+            elements.betAmountInput.value = (betAmount * 2).toFixed(2);
+        }
+        if (elements.autoReverseMartingale.checked) {
+            elements.betAmountInput.value = elements.baseBetInput.value;
+        }
+    }
+
+    // Event Listeners
+    elements.spinButton.addEventListener('click', () => {
+        if (userBalance <= 0) {
+            elements.balanceDisplay.textContent = 'User is out of money!';
+            elements.balanceDisplay.style.color = 'red';
+            balanceHistory.push(0);
+            showGameOver();
+            return;
+        }
+
+        const betAmount = parseFloat(elements.betAmountInput.value);
+        
+        if (betAmount > userBalance) {
+            showGameOver();
+            return;
+        }
+
+        userBalance -= betAmount;
+        const result = flipCoin();
+        handleBetResult(result, betAmount);
+    });
+
+    elements.doubleBetButton.addEventListener('click', () => {
+        const currentBet = parseFloat(elements.betAmountInput.value);
+        elements.betAmountInput.value = (currentBet * 2).toFixed(2);
+    });
+
+    elements.resetBetButton.addEventListener('click', () => {
+        elements.betAmountInput.value = elements.baseBetInput.value;
+    });
+
+    elements.resetGameButton.addEventListener('click', () => {
+        userBalance = INITIAL_BALANCE;
+        balanceHistory = [INITIAL_BALANCE];
+        elements.betAmountInput.value = elements.baseBetInput.value;
+        elements.balanceDisplay.style.color = 'black';
+        currentConsecutiveWins = 0;
+        currentConsecutiveLosses = 0;
+        maxConsecutiveWins = 0;
+        maxConsecutiveLosses = 0;
+        maxWinCurrent = 0;
+        maxLossCurrent = 0;
+        maxBalance = INITIAL_BALANCE;
+        minBalance = INITIAL_BALANCE;
+        updateBalanceDisplay();
+        updateStats(false, 0);
+        updateChart();
+        if (autoSpinTimer) {
+            elements.autoSpinButton.click();
+        }
+    });
+
+    elements.spinSpeed.addEventListener('input', function() {
+        AUTO_SPIN_INTERVAL = 1000 / this.value;
+        if (autoSpinTimer) {
+            clearInterval(autoSpinTimer);
+            autoSpinTimer = setInterval(() => elements.spinButton.click(), AUTO_SPIN_INTERVAL);
+        }
+    });
+
+    elements.autoSpinButton.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        
+        if (!isActive) {
+            this.classList.add('active');
+            this.textContent = 'Stop Auto Spin';
+            AUTO_SPIN_INTERVAL = 1000 / elements.spinSpeed.value;
+            autoSpinTimer = setInterval(() => elements.spinButton.click(), AUTO_SPIN_INTERVAL);
+        } else {
+            this.classList.remove('active');
+            this.textContent = 'Auto Spin';
+            clearInterval(autoSpinTimer);
+            autoSpinTimer = null;
+        }
+    });
+</script>
+</html>
