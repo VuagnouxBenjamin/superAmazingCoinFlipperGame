@@ -161,6 +161,31 @@
         #leaderboardContent.collapsed {
             max-height: 0;
         }
+        .strategy-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+        .preset-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 150px;
+        }
+        .preset-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -212,13 +237,37 @@
             <input type="number" id="spinSpeed" value="20" min="1" max="200" step="1" />
         </div>
         <div class="strategy-controls">
-            <div>
-                <input type="checkbox" id="autoMartingale" />
-                <label for="autoMartingale">Automatic Martingale</label>
-            </div>
-            <div>
-                <input type="checkbox" id="autoReverseMartingale" />
-                <label for="autoReverseMartingale">Automatic Reverse Martingale</label>
+            <form class="strategy-form">
+                <div class="controls-group">
+                    <label for="baseBetAmount">Base Bet Amount:</label>
+                    <input type="number" id="baseBetAmount" step="0.01" min="0.01" value="1.00" />
+                </div>
+                <div class="controls-group">
+                    <label>Operation:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="operation" value="+" checked> +</label>
+                        <label><input type="radio" name="operation" value="-"> -</label>
+                        <label><input type="radio" name="operation" value="*"> *</label>
+                        <label><input type="radio" name="operation" value="/"> /</label>
+                    </div>
+                </div>
+                <div class="controls-group">
+                    <label for="factor">Factor:</label>
+                    <input type="number" id="factor" step="0.01" min="0.01" value="2.00" />
+                </div>
+                <div class="controls-group">
+                    <label>Trigger:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="trigger" value="win" checked> Win</label>
+                        <label><input type="radio" name="trigger" value="loose"> Loose</label>
+                    </div>
+                </div>
+                <button type="button" id="activateStrategy">Activate Strategy</button>
+            </form>
+            <div class="preset-column">
+                <div class="preset-title">Presets</div>
+                <button id="martingalePreset" onclick="setMartingalePreset()">Martingale</button>
+                <button id="reverseMartingalePreset" onclick="setReverseMartingalePreset()">Reverse Martingale</button>
             </div>
         </div>
     </div>
@@ -284,6 +333,20 @@
     // Leaderboard
     let leaderboard = JSON.parse(localStorage.getItem('coinFlipLeaderboard')) || [];
 
+    function setMartingalePreset() {
+        document.getElementById('baseBetAmount').value = '0.01';
+        document.querySelector('input[name="operation"][value="*"]').checked = true;
+        document.getElementById('factor').value = '2.00';
+        document.querySelector('input[name="trigger"][value="loose"]').checked = true;
+    }
+
+    function setReverseMartingalePreset() {
+        document.getElementById('baseBetAmount').value = '0.01';
+        document.querySelector('input[name="operation"][value="*"]').checked = true;
+        document.getElementById('factor').value = '2.00';
+        document.querySelector('input[name="trigger"][value="win"]').checked = true;
+    }
+
     function toggleLeaderboard() {
         const content = document.getElementById('leaderboardContent');
         const title = document.querySelector('.leaderboard-title');
@@ -342,8 +405,8 @@
         resetBetButton: document.getElementById('resetBetButton'),
         resetGameButton: document.getElementById('resetGameButton'),
         autoMartingale: document.getElementById('autoMartingale'),
-        autoReverseMartingale: document.getElementById('autoReverseMartingale'),
         autoSpinButton: document.getElementById('autoSpinButton'),
+        activateStrategy: document.getElementById('activateStrategy'),
         balanceDisplay: document.getElementById('balanceDisplay'),
         betAmountInput: document.getElementById('betAmount'),
         baseBetInput: document.getElementById('baseBet'),
@@ -448,6 +511,41 @@
             handleLosingStrategy(betAmount);
         }
 
+        // Apply strategy if active
+        if (elements.activateStrategy.classList.contains('active')) {
+            const triggerValue = document.querySelector('input[name="trigger"]:checked').value;
+            const operation = document.querySelector('input[name="operation"]:checked').value;
+            const factor = parseFloat(document.getElementById('factor').value);
+            const baseBetAmount = parseFloat(document.getElementById('baseBetAmount').value);
+            const currentBet = parseFloat(elements.betAmountInput.value);
+
+            // Check if the result matches the trigger condition
+            const isTriggered = (triggerValue === 'win' && isWin) || (triggerValue === 'loose' && !isWin);
+
+            if (isTriggered) {
+                // Apply the selected operation
+                let newBet;
+                switch (operation) {
+                    case '+':
+                        newBet = currentBet + factor;
+                        break;
+                    case '-':
+                        newBet = currentBet - factor;
+                        break;
+                    case '*':
+                        newBet = currentBet * factor;
+                        break;
+                    case '/':
+                        newBet = currentBet / factor;
+                        break;
+                }
+                elements.betAmountInput.value = Math.max(0.01, newBet).toFixed(2);
+            } else {
+                // Reset to base bet amount
+                elements.betAmountInput.value = baseBetAmount.toFixed(2);
+            }
+        }
+
         updateStats(isWin, betAmount);
         updateBalanceDisplay();
         balanceHistory.push(userBalance);
@@ -455,25 +553,9 @@
     }
 
     function handleWinningStrategy(betAmount) {
-        if (elements.autoMartingale.checked) {
-            elements.betAmountInput.value = elements.baseBetInput.value;
-        }
-        if (elements.autoReverseMartingale.checked) {
-            if (currentConsecutiveWins >= 2) {
-                elements.betAmountInput.value = elements.baseBetInput.value;
-            } else {
-                elements.betAmountInput.value = (betAmount * parseFloat(elements.baseBetInput.value)).toFixed(2);
-            }
-        }
     }
 
     function handleLosingStrategy(betAmount) {
-        if (elements.autoMartingale.checked) {
-            elements.betAmountInput.value = (betAmount * 2).toFixed(2);
-        }
-        if (elements.autoReverseMartingale.checked) {
-            elements.betAmountInput.value = elements.baseBetInput.value;
-        }
     }
 
     // Event Listeners
@@ -549,6 +631,18 @@
             this.textContent = 'Auto Spin';
             clearInterval(autoSpinTimer);
             autoSpinTimer = null;
+        }
+    });
+
+    elements.activateStrategy.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        
+        if (!isActive) {
+            this.classList.add('active');
+            this.textContent = 'Deactivate Strategy';
+        } else {
+            this.classList.remove('active');
+            this.textContent = 'Activate Strategy';
         }
     });
 </script>
