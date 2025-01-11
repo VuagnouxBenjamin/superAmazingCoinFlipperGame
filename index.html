@@ -337,6 +337,7 @@
     // Game variables
     let userBalance = INITIAL_BALANCE;
     let balanceHistory = [INITIAL_BALANCE];
+    let spinCount = 0;
     let autoSpinTimer = null;
     let currentConsecutiveWins = 0;
     let currentConsecutiveLosses = 0;
@@ -501,8 +502,17 @@
     }
 
     function updateChart() {
+        spinCount++;
+        
+        // Reset chart every 100 spins
+        if (spinCount % 1000 === 0) {
+            balanceHistory = [userBalance];
+        } else {
+            balanceHistory.push(userBalance);
+        }
+        
         const trace = {
-            x: Array.from({ length: balanceHistory.length }, (_, i) => i),
+            x: Array.from({ length: balanceHistory.length }, (_, i) => spinCount - balanceHistory.length + 1 + i),
             y: balanceHistory,
             type: 'scatter',
             mode: 'lines+markers',
@@ -580,7 +590,6 @@
 
         updateStats(isWin, betAmount);
         updateBalanceDisplay();
-        balanceHistory.push(userBalance);
         updateChart();
     }
 
@@ -624,6 +633,7 @@
     elements.resetGameButton.addEventListener('click', () => {
         userBalance = INITIAL_BALANCE;
         balanceHistory = [INITIAL_BALANCE];
+        spinCount = 0;
         elements.betAmountInput.value = elements.baseBetInput.value;
         elements.balanceDisplay.style.color = 'black';
         currentConsecutiveWins = 0;
