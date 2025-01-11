@@ -81,7 +81,7 @@
             background-color: #001100;
             border: 1px solid #00ff00;
         }
-        .game-over-modal {
+        .game-over-modal, .save-preset-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -203,6 +203,47 @@
             margin-bottom: 10px;
             text-transform: uppercase;
         }
+        .save-preset-modal {
+            display: none;
+        }
+        .save-preset-modal .modal-content {
+            padding: 20px;
+            text-align: center;
+        }
+        .save-preset-modal input {
+            margin: 10px 0;
+            width: 80%;
+        }
+        .custom-presets {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .custom-preset-item {
+            display: flex;
+            gap: 0;
+            width: 100%;
+        }
+        .custom-preset-item button:first-child {
+            width: 80%;
+            border-right: none;
+        }
+        .delete-preset {
+            width: 20%;
+            padding: 8px 0;
+            font-size: 12px;
+            background-color: #330000;
+            border-color: #ff0000;
+            color: #ff0000;
+            border-left: none;
+        }
+        .custom-presets-title {
+            font-weight: bold;
+            margin: 15px 0 5px 0;
+            color: #00ff00;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -226,6 +267,18 @@
             <button onclick="elements.resetGameButton.click(); document.getElementById('gameOverModal').style.display='none';">
                 Reset Game Without Saving
             </button>
+        </div>
+    </div>
+
+    <div class="save-preset-modal" id="savePresetModal">
+        <div class="modal-content">
+            <div class="modal-title">Save Preset</div>
+            <div>
+                <label for="presetName">Preset Name:</label>
+                <input type="text" id="presetName" placeholder="Enter preset name" />
+            </div>
+            <button onclick="savePreset()">Save</button>
+            <button onclick="document.getElementById('savePresetModal').style.display='none';">Cancel</button>
         </div>
     </div>
 
@@ -253,6 +306,7 @@
             <label for="spinSpeed">Spins per second:</label>
             <input type="number" id="spinSpeed" value="20" min="1" max="200" step="1" />
         </div>
+        <div class="panel-title">Strategy Settings</div>
         <div class="strategy-controls">
             <form class="strategy-form">
                 <div class="controls-group">
@@ -280,11 +334,15 @@
                     </div>
                 </div>
                 <button type="button" id="activateStrategy">Activate Strategy</button>
+                <button type="button" id="saveStrategyButton" onclick="showSavePresetModal()">Save as Preset</button>
             </form>
             <div class="preset-column">
                 <div class="preset-title">Presets</div>
                 <button id="martingalePreset" onclick="setMartingalePreset()">Martingale</button>
                 <button id="reverseMartingalePreset" onclick="setReverseMartingalePreset()">Reverse Martingale</button>
+                <div class="custom-presets" id="customPresets">
+                    <!-- Custom presets will be added here dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -346,6 +404,85 @@
     let maxLossCurrent = 0;
     let maxBalance = INITIAL_BALANCE;
     let minBalance = INITIAL_BALANCE;
+
+    // Custom presets storage
+    let customPresets = JSON.parse(localStorage.getItem('customPresets')) || [];
+
+    function showSavePresetModal() {
+        document.getElementById('savePresetModal').style.display = 'block';
+    }
+
+    function savePreset() {
+        const presetName = document.getElementById('presetName').value;
+        if (!presetName) {
+            alert('Please enter a preset name');
+            return;
+        }
+
+        const preset = {
+            name: presetName,
+            baseBetAmount: document.getElementById('baseBetAmount').value,
+            operation: document.querySelector('input[name="operation"]:checked').value,
+            factor: document.getElementById('factor').value,
+            trigger: document.querySelector('input[name="trigger"]:checked').value
+        };
+
+        customPresets.push(preset);
+        localStorage.setItem('customPresets', JSON.stringify(customPresets));
+        
+        updateCustomPresetsDisplay();
+        document.getElementById('savePresetModal').style.display = 'none';
+        document.getElementById('presetName').value = '';
+    }
+
+    function deletePreset(index) {
+        customPresets.splice(index, 1);
+        localStorage.setItem('customPresets', JSON.stringify(customPresets));
+        updateCustomPresetsDisplay();
+    }
+
+    function loadCustomPreset(preset) {
+        document.getElementById('baseBetAmount').value = preset.baseBetAmount;
+        document.querySelector(`input[name="operation"][value="${preset.operation}"]`).checked = true;
+        document.getElementById('factor').value = preset.factor;
+        document.querySelector(`input[name="trigger"][value="${preset.trigger}"]`).checked = true;
+    }
+
+    function updateCustomPresetsDisplay() {
+        const container = document.getElementById('customPresets');
+        container.innerHTML = '';
+        
+        if (customPresets.length > 0) {
+            const title = document.createElement('div');
+            title.className = 'custom-presets-title';
+            title.textContent = 'Custom Presets';
+            container.appendChild(title);
+            
+            customPresets.forEach((preset, index) => {
+                const presetContainer = document.createElement('div');
+                presetContainer.className = 'custom-preset-item';
+                
+                const button = document.createElement('button');
+                button.textContent = preset.name;
+                button.onclick = () => loadCustomPreset(preset);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'X';
+                deleteButton.className = 'delete-preset';
+                deleteButton.onclick = (e) => {
+                    e.stopPropagation();
+                    deletePreset(index);
+                };
+                
+                presetContainer.appendChild(button);
+                presetContainer.appendChild(deleteButton);
+                container.appendChild(presetContainer);
+            });
+        }
+    }
+
+    // Initialize custom presets display
+    updateCustomPresetsDisplay();
 
     // Leaderboard
     let leaderboard = JSON.parse(localStorage.getItem('coinFlipLeaderboard')) || [];
