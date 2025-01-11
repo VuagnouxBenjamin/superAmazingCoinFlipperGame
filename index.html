@@ -50,6 +50,16 @@
         button:hover {
             background-color: #003300;
         }
+        button.primary {
+            background-color: #006600;
+            border-color: #00ff00;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        button.primary:hover {
+            background-color: #008800;
+        }
         button.active {
             background-color: #330000;
             border-color: #ff0000;
@@ -58,6 +68,12 @@
         }
         button.active:hover {
             background-color: #660000;
+        }
+        button.primary.active {
+            background-color: #660000;
+            border-color: #ff0000;
+            color: #fff;
+            box-shadow: 0 0 10px #ff0000;
         }
         input[type="number"], input[type="text"] {
             padding: 8px;
@@ -286,11 +302,11 @@
         <div class="panel-title">Money Management</div>
         <div class="controls-group">
             <label for="takeProfit">Take Profit:</label>
-            <input type="number" id="takeProfit" value="200" min="0" step="1" />
+            <input type="number" id="takeProfit" value="0" min="0" step="1" />
         </div>
         <div class="controls-group">
             <label for="stopLoss">Stop Loss:</label>
-            <input type="number" id="stopLoss" value="50" min="0" step="1" />
+            <input type="number" id="stopLoss" value="0" min="0" step="1" />
         </div>
     </div>
 
@@ -298,32 +314,32 @@
         <div class="panel-title">Betting Controls</div>
         <div class="controls-group">
             <label for="baseBet">Base Bet:</label>
-            <input type="number" id="baseBet" value="0.01" min="0.01" max="99999999999999999999999" step="0.01" oninput="elements.betAmountInput.value = this.value" />
+            <input type="number" id="baseBet" value="1" min="0.01" max="99999999999999999999999" step="0.1" oninput="elements.betAmountInput.value = this.value" /> 
+            <button id="resetBetButton">Reset Bet</button>
         </div>
         <div class="controls-group">
             <label for="betAmount">Bet Amount:</label>
-            <input type="number" id="betAmount" value="0.01" min="0.01" max="99999999999999999999999" step="0.01" />
-            <button id="spinButton">Spin The Coin</button>
+            <input type="number" id="betAmount" value="1" min="0.01" max="99999999999999999999999" step="0.1" />
+            <button id="doubleBetButton">Double The Bet</button>
         </div>
         <div class="controls-group">
-            <button id="doubleBetButton">Double The Bet</button>
-            <button id="resetBetButton">Reset Bet</button>
+            <button id="spinButton" class="primary">Spin The Coin</button> 
         </div>
     </div>
 
     <div class="panel">
         <div class="panel-title">Automation Settings</div>
         <div class="controls-group">
-            <button id="autoSpinButton">Auto Spin</button>
+            <button id="autoSpinButton" class="primary">Auto Spin</button>
             <label for="spinSpeed">Spins per second:</label>
-            <input type="number" id="spinSpeed" value="20" min="1" max="200" step="1" />
+            <input type="number" id="spinSpeed" value="5" min="1" max="200" step="1" />
         </div>
         <div class="panel-title">Strategy Settings</div>
         <div class="strategy-controls">
             <form class="strategy-form">
                 <div class="controls-group">
                     <label for="baseBetAmount">Base Bet Amount:</label>
-                    <input type="number" id="baseBetAmount" step="0.01" min="0.01" value="1.00" />
+                    <input type="number" id="baseBetAmount" step="0.1" min="0.01" value="1" />
                 </div>
                 <div class="controls-group">
                     <label>Operation:</label>
@@ -336,7 +352,7 @@
                 </div>
                 <div class="controls-group">
                     <label for="factor">Factor:</label>
-                    <input type="number" id="factor" step="0.01" min="0.01" value="2.00" />
+                    <input type="number" id="factor" step="0.1" min="0.01" value="2" />
                 </div>
                 <div class="controls-group">
                     <label>Trigger:</label>
@@ -345,7 +361,7 @@
                         <label><input type="radio" name="trigger" value="loose"> Loose</label>
                     </div>
                 </div>
-                <button type="button" id="activateStrategy">Activate Strategy</button>
+                <button type="button" id="activateStrategy" class="primary">Activate Strategy</button>
                 <button type="button" id="saveStrategyButton" onclick="showSavePresetModal()">Save as Preset</button>
             </form>
             <div class="preset-column">
