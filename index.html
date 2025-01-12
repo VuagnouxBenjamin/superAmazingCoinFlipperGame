@@ -269,6 +269,11 @@
         .right-column {
             grid-column: 2;
         }
+        #gameOverActions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -288,18 +293,22 @@
                     <input type="text" id="playerName" value="Doob" />
                 </div>
             </div>
-            <button onclick="saveScore()">Save Score</button>
-            <button onclick="elements.resetGameButton.click(); document.getElementById('gameOverModal').style.display='none';">
-                Reset Game Without Saving
-            </button>
+            <div id="gameOverActions">
+                <button onclick="saveScore()">Save Score</button>
+                <button onclick="elements.resetGameButton.click(); document.getElementById('gameOverModal').style.display='none';">
+                    Reset Game Without Saving
+                </button>
+                <button id="continueWithBank" class="primary" onclick="continueWithBank()" style="display: none;">
+                    Continue with Bank
+                </button>
+            </div>
         </div>
     </div>
 
     <div class="save-preset-modal" id="savePresetModal">
         <div class="modal-content">
             <div class="modal-title">Save Preset</div>
-            <div>
-                <label for="presetName">Preset Name:</label>
+            <div>                <label for="presetName">Preset Name:</label>
                 <input type="text" id="presetName" placeholder="Enter preset name" />
             </div>
             <button onclick="savePreset()">Save</button>
@@ -675,11 +684,28 @@
             document.getElementById('newHighScore').style.display = 'none';
         }
         
+        // Show continue with bank button if bank balance >= 100
+        const continueWithBankBtn = document.getElementById('continueWithBank');
+        if (bankBalance >= 100) {
+            continueWithBankBtn.style.display = 'block';
+        } else {
+            continueWithBankBtn.style.display = 'none';
+        }
+        
         modal.style.display = 'block';
         
         if (autoSpinTimer) {
             elements.autoSpinButton.click(); // Stop auto spin
         }
+    }
+
+    function continueWithBank() {
+        bankBalance -= 100;
+        userBalance = 100;
+        localStorage.setItem('bankBalance', JSON.stringify(bankBalance));
+        updateBankBalanceDisplay();
+        updateBalanceDisplay();
+        document.getElementById('gameOverModal').style.display = 'none';
     }
 
     function updateStats(isWin, betAmount) {
