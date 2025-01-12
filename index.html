@@ -10,13 +10,16 @@
     <style>
         body {
             font-family: 'Courier New', Courier, monospace;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             position: relative;
             min-height: 100vh;
             background-color: #000;
             color: #00ff00;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
         .panel {
             margin: 20px 0;
@@ -260,6 +263,12 @@
             color: #00ff00;
             text-transform: uppercase;
         }
+        .left-column {
+            grid-column: 1;
+        }
+        .right-column {
+            grid-column: 2;
+        }
     </style>
 </head>
 <body>
@@ -298,117 +307,138 @@
         </div>
     </div>
 
-    <div class="panel">
-        <div class="panel-title">Money Management</div>
-        <div class="controls-group">
-            <label for="takeProfit">Take Profit:</label>
-            <input type="number" id="takeProfit" value="0" min="0" step="1" />
+    <div class="left-column">
+        <div class="panel">
+            <div class="panel-title">Betting Controls</div>
+            <div class="controls-group">
+                <label for="baseBet">Base Bet:</label>
+                <input type="number" id="baseBet" value="1" min="0.01" max="99999999999999999999999" step="0.1" oninput="elements.betAmountInput.value = this.value" /> 
+                <button id="resetBetButton">Reset Bet</button>
+            </div>
+            <div class="controls-group">
+                <label for="betAmount">Bet Amount:</label>
+                <input type="number" id="betAmount" value="1" min="0.01" max="99999999999999999999999" step="0.1" />
+                <button id="doubleBetButton">Double The Bet</button>
+            </div>
+            <div class="controls-group">
+                <button id="spinButton" class="primary">Spin The Coin</button> 
+            </div>
         </div>
-        <div class="controls-group">
-            <label for="stopLoss">Stop Loss:</label>
-            <input type="number" id="stopLoss" value="0" min="0" step="1" />
-        </div>
-    </div>
 
-    <div class="panel">
-        <div class="panel-title">Betting Controls</div>
-        <div class="controls-group">
-            <label for="baseBet">Base Bet:</label>
-            <input type="number" id="baseBet" value="1" min="0.01" max="99999999999999999999999" step="0.1" oninput="elements.betAmountInput.value = this.value" /> 
-            <button id="resetBetButton">Reset Bet</button>
-        </div>
-        <div class="controls-group">
-            <label for="betAmount">Bet Amount:</label>
-            <input type="number" id="betAmount" value="1" min="0.01" max="99999999999999999999999" step="0.1" />
-            <button id="doubleBetButton">Double The Bet</button>
-        </div>
-        <div class="controls-group">
-            <button id="spinButton" class="primary">Spin The Coin</button> 
-        </div>
-    </div>
-
-    <div class="panel">
-        <div class="panel-title">Automation Settings</div>
-        <div class="controls-group">
-            <button id="autoSpinButton" class="primary">Auto Spin</button>
-            <label for="spinSpeed">Spins per second:</label>
-            <input type="number" id="spinSpeed" value="5" min="1" max="200" step="1" />
-        </div>
-        <div class="panel-title">Strategy Settings</div>
-        <div class="strategy-controls">
-            <form class="strategy-form">
-                <div class="controls-group">
-                    <label for="baseBetAmount">Base Bet Amount:</label>
-                    <input type="number" id="baseBetAmount" step="0.1" min="0.01" value="1" />
-                </div>
-                <div class="controls-group">
-                    <label>Operation:</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="operation" value="+" checked> +</label>
-                        <label><input type="radio" name="operation" value="-"> -</label>
-                        <label><input type="radio" name="operation" value="*"> *</label>
-                        <label><input type="radio" name="operation" value="/"> /</label>
+        <div class="panel">
+            <div class="panel-title">Automation Settings</div>
+            <div class="controls-group">
+                <button id="autoSpinButton" class="primary">Auto Spin</button>
+                <label for="spinSpeed">Spins per second:</label>
+                <input type="number" id="spinSpeed" value="5" min="1" max="200" step="1" />
+            </div>
+            <div class="panel-title">Strategy Settings</div>
+            <div class="strategy-controls">
+                <form class="strategy-form">
+                    <div class="controls-group">
+                        <label for="baseBetAmount">Base Bet Amount:</label>
+                        <input type="number" id="baseBetAmount" step="0.1" min="0.01" value="1" />
                     </div>
-                </div>
-                <div class="controls-group">
-                    <label for="factor">Factor:</label>
-                    <input type="number" id="factor" step="0.1" min="0.01" value="2" />
-                </div>
-                <div class="controls-group">
-                    <label>Trigger:</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="trigger" value="win" checked> Win</label>
-                        <label><input type="radio" name="trigger" value="loose"> Loose</label>
+                    <div class="controls-group">
+                        <label>Operation:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="operation" value="+" checked> +</label>
+                            <label><input type="radio" name="operation" value="-"> -</label>
+                            <label><input type="radio" name="operation" value="*"> *</label>
+                            <label><input type="radio" name="operation" value="/"> /</label>
+                        </div>
                     </div>
-                </div>
-                <button type="button" id="activateStrategy" class="primary">Activate Strategy</button>
-                <button type="button" id="saveStrategyButton" onclick="showSavePresetModal()">Save as Preset</button>
-            </form>
-            <div class="preset-column">
-                <div class="preset-title">Presets</div>
-                <button id="martingalePreset" onclick="setMartingalePreset()">Martingale</button>
-                <button id="reverseMartingalePreset" onclick="setReverseMartingalePreset()">Reverse Martingale</button>
-                <div class="custom-presets" id="customPresets">
-                    <!-- Custom presets will be added here dynamically -->
+                    <div class="controls-group">
+                        <label for="factor">Factor:</label>
+                        <input type="number" id="factor" step="0.1" min="0.01" value="2" />
+                    </div>
+                    <div class="controls-group">
+                        <label>Trigger:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="trigger" value="win" checked> Win</label>
+                            <label><input type="radio" name="trigger" value="loose"> Loose</label>
+                        </div>
+                    </div>
+                    <button type="button" id="activateStrategy" class="primary">Activate Strategy</button>
+                    <button type="button" id="saveStrategyButton" onclick="showSavePresetModal()">Save as Preset</button>
+                </form>
+                <div class="preset-column">
+                    <div class="preset-title">Presets</div>
+                    <button id="martingalePreset" onclick="setMartingalePreset()">Martingale</button>
+                    <button id="reverseMartingalePreset" onclick="setReverseMartingalePreset()">Reverse Martingale</button>
+                    <div class="custom-presets" id="customPresets">
+                        <!-- Custom presets will be added here dynamically -->
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="panel">
-        <div class="panel-title">Game Status</div>
-        <p id="balanceDisplay"></p>
-        <div id="balanceHistoryChart"></div>
-    </div>
-
-    <div class="panel">
-        <div class="panel-title">Statistics</div>
-        <div class="stats-grid">
-            <div class="stat-item">Max Loss Current: <span id="maxLossCurrent">0</span></div>
-            <div class="stat-item">Max Win Current: <span id="maxWinCurrent">0</span></div>
-            <div class="stat-item">Max Consecutive Loss: <span id="maxConsecutiveLoss">0</span></div>
-            <div class="stat-item">Max Consecutive Win: <span id="maxConsecutiveWin">0</span></div>
-            <div class="stat-item">Max Balance: <span id="maxBalance">100</span></div>
-            <div class="stat-item">Min Balance: <span id="minBalance">100</span></div>
+        <div class="panel">
+            <div class="panel-title">Bank</div>
+            <div class="controls-group">
+                <label for="bankDeposit">Deposit Amount:</label>
+                <input type="number" id="bankDeposit" min="5" step="5" />
+                <button id="depositButton">Deposit</button>
+                <button id="depositAllButton">Deposit All</button>
+            </div>
+            <div class="controls-group">
+                <label for="bankWithdraw">Withdraw Amount:</label>
+                <input type="number" id="bankWithdraw" min="5" step="5" />
+                <button id="withdrawButton">Withdraw</button>
+                <button id="withdrawAllButton">Withdraw All</button>
+            </div>
+            <p>Bank Balance: <span id="bankBalanceDisplay">0</span></p>
         </div>
     </div>
 
-    <div class="panel leaderboard-panel">
-        <div class="panel-title leaderboard-title" onclick="toggleLeaderboard()">Leaderboard</div>
-        <div id="leaderboardContent">
-            <table class="leaderboard-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Final Balance</th>
-                        <th>Max Balance</th>
-                        <th>Max Win</th>
-                        <th>Max Consecutive Wins</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboardBody">
-                </tbody>
-            </table>
+    <div class="right-column">
+        <div class="panel">
+            <div class="panel-title">Money Management</div>
+            <div class="controls-group">
+                <label for="takeProfit">Take Profit:</label>
+                <input type="number" id="takeProfit" value="0" min="0" step="1" />
+            </div>
+            <div class="controls-group">
+                <label for="stopLoss">Stop Loss:</label>
+                <input type="number" id="stopLoss" value="0" min="0" step="1" />
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Game Status</div>
+            <p id="balanceDisplay"></p>
+            <div id="balanceHistoryChart"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Statistics</div>
+            <div class="stats-grid">
+                <div class="stat-item">Max Loss Current: <span id="maxLossCurrent">0</span></div>
+                <div class="stat-item">Max Win Current: <span id="maxWinCurrent">0</span></div>
+                <div class="stat-item">Max Consecutive Loss: <span id="maxConsecutiveLoss">0</span></div>
+                <div class="stat-item">Max Consecutive Win: <span id="maxConsecutiveWin">0</span></div>
+                <div class="stat-item">Max Balance: <span id="maxBalance">100</span></div>
+                <div class="stat-item">Min Balance: <span id="minBalance">100</span></div>
+            </div>
+        </div>
+
+        <div class="panel leaderboard-panel">
+            <div class="panel-title leaderboard-title" onclick="toggleLeaderboard()">Leaderboard</div>
+            <div id="leaderboardContent">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Final Balance</th>
+                            <th>Max Balance</th>
+                            <th>Max Win</th>
+                            <th>Max Consecutive Wins</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -860,5 +890,79 @@
             this.textContent = 'Activate Strategy';
         }
     });
+
+    // Initialiser la Bank Balance
+    let bankBalance = JSON.parse(localStorage.getItem('bankBalance')) || 0;
+
+    // Mettre à jour l'affichage de la Bank Balance
+    function updateBankBalanceDisplay() {
+        document.getElementById('bankBalanceDisplay').textContent = bankBalance.toFixed(2);
+    }
+
+    // Dépôt dans la Bank
+    document.getElementById('depositButton').addEventListener('click', () => {
+        const depositAmount = parseInt(document.getElementById('bankDeposit').value);
+        if (userBalance <= 100) {
+            alert('You cannot deposit if your balance is less than or equal to 100.');
+            return;
+        }
+        if (depositAmount % 5 !== 0 || depositAmount <= 0) {
+            alert('You can only deposit amounts in multiples of 5.');
+            return;
+        }
+        if (userBalance < depositAmount) {
+            alert('Insufficient balance to deposit.');
+            return;
+        }
+        userBalance -= depositAmount;
+        bankBalance += depositAmount;
+        localStorage.setItem('bankBalance', JSON.stringify(bankBalance)); // Enregistrer dans localStorage
+        updateBalanceDisplay();
+        updateBankBalanceDisplay();
+    });
+
+    // Dépôt de tout le montant au-dessus de 100
+    document.getElementById('depositAllButton').addEventListener('click', () => {
+        if (userBalance <= 100) {
+            alert('You cannot deposit if your balance is less than or equal to 100.');
+            return;
+        }
+        const amountToDeposit = userBalance - 100;
+        userBalance -= amountToDeposit;
+        bankBalance += amountToDeposit;
+        localStorage.setItem('bankBalance', JSON.stringify(bankBalance)); // Enregistrer dans localStorage
+        updateBalanceDisplay();
+        updateBankBalanceDisplay();
+    });
+
+    // Retrait de la Bank
+    document.getElementById('withdrawButton').addEventListener('click', () => {
+        const withdrawAmount = parseInt(document.getElementById('bankWithdraw').value);
+        if (withdrawAmount % 5 !== 0 || withdrawAmount <= 0) {
+            alert('You can only withdraw amounts in multiples of 5.');
+            return;
+        }
+        if (bankBalance < withdrawAmount) {
+            alert('Insufficient bank balance to withdraw.');
+            return;
+        }
+        userBalance += withdrawAmount;
+        bankBalance -= withdrawAmount;
+        localStorage.setItem('bankBalance', JSON.stringify(bankBalance)); // Enregistrer dans localStorage
+        updateBalanceDisplay();
+        updateBankBalanceDisplay();
+    });
+
+    // Retrait de tout le montant de la Bank
+    document.getElementById('withdrawAllButton').addEventListener('click', () => {
+        userBalance += bankBalance;
+        bankBalance = 0;
+        localStorage.setItem('bankBalance', JSON.stringify(bankBalance)); // Enregistrer dans localStorage
+        updateBalanceDisplay();
+        updateBankBalanceDisplay();
+    });
+
+    // Initialiser l'affichage de la Bank Balance
+    updateBankBalanceDisplay();
 </script>
 </html>
