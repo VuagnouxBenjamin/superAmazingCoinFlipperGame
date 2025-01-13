@@ -335,6 +335,14 @@
         </div>
 
         <div class="panel">
+            <div class="panel-title">Win Rate Settings</div>
+            <div class="controls-group">
+                <label for="winRate">Win Rate (%):</label>
+                <input type="number" id="winRate" value="50" min="0" max="100" step="1" />
+            </div>
+        </div>
+
+        <div class="panel">
             <div class="panel-title">Automation Settings</div>
             <div class="controls-group">
                 <button id="autoSpinButton" class="primary">Auto Spin</button>
@@ -428,6 +436,7 @@
                 <div class="stat-item">Max Consecutive Win: <span id="maxConsecutiveWin">0</span></div>
                 <div class="stat-item">Max Balance: <span id="maxBalance">100</span></div>
                 <div class="stat-item">Min Balance: <span id="minBalance">100</span></div>
+                <div class="stat-item">Current Winrate: <span id="currentWinrate">0%</span></div>
             </div>
         </div>
 
@@ -471,6 +480,8 @@
     let maxLossCurrent = 0;
     let maxBalance = INITIAL_BALANCE;
     let minBalance = INITIAL_BALANCE;
+    let totalWins = 0;
+    let totalSpins = 0;
 
     // Custom presets storage
     let customPresets = JSON.parse(localStorage.getItem('customPresets')) || [];
@@ -638,9 +649,11 @@
         maxConsecutiveWin: document.getElementById('maxConsecutiveWin'),
         maxBalance: document.getElementById('maxBalance'),
         minBalance: document.getElementById('minBalance'),
+        currentWinrate: document.getElementById('currentWinrate'),
         spinSpeed: document.getElementById('spinSpeed'),
         takeProfit: document.getElementById('takeProfit'),
-        stopLoss: document.getElementById('stopLoss')
+        stopLoss: document.getElementById('stopLoss'),
+        winRate: document.getElementById('winRate')
     };
 
     // Initialize display
@@ -715,12 +728,14 @@
             currentConsecutiveLosses = 0;
             maxConsecutiveWins = Math.max(maxConsecutiveWins, currentConsecutiveWins);
             maxWinCurrent = Math.max(maxWinCurrent, betAmount * 2);
+            totalWins++;
         } else {
             currentConsecutiveLosses++;
             currentConsecutiveWins = 0;
             maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentConsecutiveLosses);
             maxLossCurrent = Math.max(maxLossCurrent, betAmount);
         }
+        totalSpins++;
 
         // Update balance extremes
         maxBalance = Math.max(maxBalance, userBalance);
@@ -733,10 +748,20 @@
         elements.maxConsecutiveWin.textContent = maxConsecutiveWins;
         elements.maxBalance.textContent = maxBalance.toFixed(2);
         elements.minBalance.textContent = minBalance.toFixed(2);
+
+        // Update current winrate
+        if (totalSpins > 0) {
+            const currentWinrate = (totalWins / totalSpins) * 100;
+            elements.currentWinrate.textContent = `${currentWinrate.toFixed(2)}%`;
+        } else {
+            elements.currentWinrate.textContent = '0%';
+        }
     }
 
     function flipCoin() {
-        return COIN_SIDES[Math.floor(Math.random() * COIN_SIDES.length)];
+        const winRate = parseInt(elements.winRate.value) || 50;
+        const randomNumber = Math.random() * 100;
+        return randomNumber < winRate ? 'heads' : 'tails';
     }
 
     function updateChart() {
@@ -873,6 +898,12 @@
         maxLossCurrent = 0;
         maxBalance = INITIAL_BALANCE;
         minBalance = INITIAL_BALANCE;
+        
+        // Reset current winrate
+        totalWins = 0; // Reset total wins
+        totalSpins = 0; // Reset total spins
+        elements.currentWinrate.textContent = '0%'; // Update display to show 0%
+
         updateBalanceDisplay();
         updateStats(false, 0);
         updateChart();
