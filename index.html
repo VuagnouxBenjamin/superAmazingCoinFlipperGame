@@ -376,6 +376,10 @@
                             <label><input type="radio" name="trigger" value="loose"> Loose</label>
                         </div>
                     </div>
+                    <div class="controls-group">
+                        <label for="resetBetAfterX">Reset Bet After X:</label>
+                        <input type="number" id="resetBetAfterX" min="0" step="1" placeholder="0 = disabled" />
+                    </div>
                     <button type="button" id="activateStrategy" class="primary">Activate Strategy</button>
                     <button type="button" id="saveStrategyButton" onclick="showSavePresetModal()">Save as Preset</button>
                 </form>
@@ -483,6 +487,9 @@
     let totalWins = 0;
     let totalSpins = 0;
 
+    // Reset bet after X triggers functionality
+    let triggerCount = 0;
+
     // Custom presets storage
     let customPresets = JSON.parse(localStorage.getItem('customPresets')) || [];
 
@@ -502,7 +509,8 @@
             baseBetAmount: document.getElementById('baseBetAmount').value,
             operation: document.querySelector('input[name="operation"]:checked').value,
             factor: document.getElementById('factor').value,
-            trigger: document.querySelector('input[name="trigger"]:checked').value
+            trigger: document.querySelector('input[name="trigger"]:checked').value,
+            resetBetAfterX: document.getElementById('resetBetAfterX').value || ''
         };
 
         customPresets.push(preset);
@@ -524,6 +532,7 @@
         document.querySelector(`input[name="operation"][value="${preset.operation}"]`).checked = true;
         document.getElementById('factor').value = preset.factor;
         document.querySelector(`input[name="trigger"][value="${preset.trigger}"]`).checked = true;
+        document.getElementById('resetBetAfterX').value = preset.resetBetAfterX || '';
     }
 
     function updateCustomPresetsDisplay() {
@@ -814,31 +823,42 @@
             const factor = parseFloat(document.getElementById('factor').value);
             const baseBetAmount = parseFloat(document.getElementById('baseBetAmount').value);
             const currentBet = parseFloat(elements.betAmountInput.value);
+            const resetBetAfterX = parseInt(document.getElementById('resetBetAfterX').value) || 0;
 
             // Check if the result matches the trigger condition
             const isTriggered = (triggerValue === 'win' && isWin) || (triggerValue === 'loose' && !isWin);
 
             if (isTriggered) {
-                // Apply the selected operation
-                let newBet;
-                switch (operation) {
-                    case '+':
-                        newBet = currentBet + factor;
-                        break;
-                    case '-':
-                        newBet = currentBet - factor;
-                        break;
-                    case '*':
-                        newBet = currentBet * factor;
-                        break;
-                    case '/':
-                        newBet = currentBet / factor;
-                        break;
+                triggerCount++;
+                
+                // Check if we need to reset bet after X triggers
+                if (resetBetAfterX > 0 && triggerCount >= resetBetAfterX) {
+                    elements.betAmountInput.value = baseBetAmount.toFixed(2);
+                    triggerCount = 0; // Reset trigger count
+                } else {
+                    // Apply the selected operation
+                    let newBet;
+                    switch (operation) {
+                        case '+':
+                            newBet = currentBet + factor;
+                            break;
+                        case '-':
+                            newBet = currentBet - factor;
+                            break;
+                        case '*':
+                            newBet = currentBet * factor;
+                            break;
+                        case '/':
+                            newBet = currentBet / factor;
+                            break;
+                    }
+                    elements.betAmountInput.value = Math.max(0.01, newBet).toFixed(2);
                 }
-                elements.betAmountInput.value = Math.max(0.01, newBet).toFixed(2);
             } else {
                 // Reset to base bet amount
                 elements.betAmountInput.value = baseBetAmount.toFixed(2);
+                // Reset trigger count when opposite result occurs
+                triggerCount = 0;
             }
         }
 
@@ -903,6 +923,9 @@
         totalWins = 0; // Reset total wins
         totalSpins = 0; // Reset total spins
         elements.currentWinrate.textContent = '0%'; // Update display to show 0%
+        
+        // Reset trigger count
+        triggerCount = 0;
 
         updateBalanceDisplay();
         updateStats(false, 0);
@@ -942,9 +965,13 @@
         if (!isActive) {
             this.classList.add('active');
             this.textContent = 'Deactivate Strategy';
+            // Reset trigger count when activating strategy
+            triggerCount = 0;
         } else {
             this.classList.remove('active');
             this.textContent = 'Activate Strategy';
+            // Reset trigger count when deactivating strategy
+            triggerCount = 0;
         }
     });
 
